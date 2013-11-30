@@ -257,6 +257,10 @@ rm -f "${DSTDIR}/isolinux/boot.cat"
 # - filter out all vcs data
 # - Map the INCLUDEDIR to the /ksinclude directory on the new iso.
 # - merge the remaining contents of SRCDIR and DSTDIR
+ISOCONTENT="${SRCDIR} ${DSTDIR}"
+if [ -n "${INCLUDEDIR}" ]; then
+  ISOCONTENT="${ISOCONTENT} ksinclude="${INCLUDEDIR}"
+fi
 ${MKISOFS} -o "${DSTISO}" \
            -b isolinux/isolinux.bin \
            -c isolinux/boot.cat \
@@ -273,7 +277,7 @@ ${MKISOFS} -o "${DSTISO}" \
            -m "${SRCDIR}/ks.cfg" \
            -m ".svn" \
            -m ".git" \
-           "${SRCDIR}" "${DSTDIR}" ksinclude="${INCLUDEDIR}"
+           "${ISOCONTENT}"
 
 if [ $? -ne 0 ]; then
   echo "Failed to create ${DSTISO}" >&2
