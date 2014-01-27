@@ -195,6 +195,7 @@ cp ${SRCDIR}/repodata/*-*.xml "${BUILDDIR}/comps.xml"
 # we have to link the "Packages" directory from
 # the source media to our destination directory.
 ln -s "${SRCDIR}/Packages" "${DSTDIR}/Packages"
+ln -s "${INCLUDEDIR}" "${DSTDIR}/ksinclude"
 ${CREATEREPO} -u "media://$(head -n1 ${SRCDIR}/.discinfo)" -g "${BUILDDIR}/comps.xml" "${DSTDIR}/."
 if [ $? -ne 0 ];then
   echo "Failed to create repository data" >&2
@@ -205,6 +206,7 @@ if [ $? -ne 0 ];then
   exit 1
 fi
 rm -f "${DSTDIR}/Packages"
+rm -f "${DSTDIR}/ksinclude"
 
 # Clean up in case we are working on an already
 # customized source media.
