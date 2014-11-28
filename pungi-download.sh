@@ -53,7 +53,7 @@ if ! [ -f "${KSFILE}" ]; then
   exit 1
 fi
 
-if [ -n ${DESTDIR} ]; then
+if [ -n "${DESTDIR}" ]; then
   if ! [ -d "${DESTDIR}" ]; then
     echo "Can not find ${DESTDIR}"
     exit 1
