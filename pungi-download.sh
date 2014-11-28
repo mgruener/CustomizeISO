@@ -69,7 +69,7 @@ fi
 
 if [ ${CREATEBASE} -eq 1 ]; then
   mkdir -p "${PUNGIBASE}/cache"
-  mkdir "${PUNGIBASE}/root"
+  mkdir -p "${PUNGIBASE}/root"
 fi
 
 # call pungi with the kickstart file
