@@ -1,10 +1,11 @@
 #!/bin/bash
 PUNGIBASE="/var/lib/pungi"
+CREATEBASE=0
 PUNGI="$(which --skip-alias --skip-functions pungi 2>/dev/null)"
 MYNAME=$(basename ${0})
 
 function usage {
-  echo "Usage: ${MYNAME} -k <kickstartfile> [-d <destdir>]"
+  echo "Usage: ${MYNAME} -k <kickstartfile> [-c] [-d <destdir>] [-b basedir]"
   exit 1
 }
 
@@ -13,13 +14,19 @@ if [ $# -eq 0 ]; then
 fi
 
 
-while getopts ":hk:d:" opt; do
+while getopts ":hck:d:b:" opt; do
   case ${opt} in
     k)
       KSFILE=${OPTARG}
       ;;
     d)
       DESTDIR=${OPTARG}
+      ;;
+    b)
+      PUNGIBASE=${OPTARG}
+      ;;
+    c)
+      CREATEBASE=1
       ;;
     h)
       usage
@@ -58,6 +65,11 @@ fi
 if [ -z "${PUNGI}" ]; then
   echo "Can not find pungi executable"
   exit 1
+fi
+
+if [ ${CREATEBASE} -eq 1 ]; then
+  mkdir -p "${PUNGIBASE}/cache"
+  mkdir "${PUNGIBASE}/root"
 fi
 
 # call pungi with the kickstart file
