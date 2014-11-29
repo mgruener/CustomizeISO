@@ -67,6 +67,9 @@ else
   cleanup 1
 fi
 
+# create the basic layout for the temporary directory
+# and create a yum configuration that exclusively
+# uses the temp dir
 mkdir -p "${TMPDIR}/yumcache"
 mkdir -p "${TMPDIR}/yumlog"
 mkdir -p "${TMPDIR}/yum.repos.d"
@@ -86,6 +89,10 @@ plugins=1
 installonly_limit=3
 EOF
 
+# validate the provided kickstart file and flatten it
+# ksflatten combines all kickstart parts referenced with
+# %include to one large kickstart file. It also combines
+# all %package section to a single one
 ksvalidator -i -e ${KSVERSION} ${KSFILE}
 if [ $? -ne 0 ]; then
   cleanup 1
@@ -95,12 +102,21 @@ STRIPPEDKS="${TMPDIR}/kickstart/stripped.ks"
 PACKAGELIST="${TMPDIR}/kickstart/packages"
 ksflatten -c ${KSFILE} -o "${FLATTENEDKS}"
 
+# strip all unnecessary stuff from the provided kickstart file
+# and extract all package / group names (we will use the package list
+# as input for yumdownloader later)
 sed -n -e '/^%packages/,/^%end/p' -e '/^repo /p' "${FLATTENEDKS}" > "${STRIPPEDKS}"
 sed -n -e '/^%packages/,/^%end/p' ${STRIPPEDKS} | egrep -v '^%|^\s*$' > "${PACKAGELIST}"
+# if the option --nobase is not used, explicitely add the
+# @base group the the packagelist
 if [ -z "$(grep -o -- '--nobase' ${STRIPPEDKS})" ]; then
   echo "@base" >> "${PACKAGELIST}"
 fi
 
+# parse alle kickstart repo statements
+# as repo uses the same parameter format as normal cli programs, use getopt
+# to easily parse each repo line and create a yum repository file from each
+# line
 grep '^repo ' "${STRIPPEDKS}" | while read -r repo
 do
   TEMP=$(getopt -u -l name:,baseurl:,mirrorlist:,cost:,excludepkgs:,includepkgs:,proxy:,ignoregroups:,noverifyssl,install -- ${repo})
@@ -174,6 +190,16 @@ ${REPO_NOVERIFYSSL}
 EOF
 done
 
-yumdownloader --installroot "${TMPDIR}" -c "${TMPDIR}/yum.conf" ${DISABLEREPOS} --resolve --destdir="${DESTDIR}" $(cat "${PACKAGELIST}")
+# download all necessary packages with yumdownloader (part of yum-utils)
+# we use the temporary yum configuration, the repository configurations
+# we just created and simulate an empty system with --installroot
+# This prevents yum from trying to resolve dependencies using packages
+# installed on the host system
+yumdownloader --installroot "${TMPDIR}" \
+              -c "${TMPDIR}/yum.conf" \
+              ${DISABLEREPOS} \
+              --resolve \
+              --destdir="${DESTDIR}" \
+              $(cat "${PACKAGELIST}")
 
 cleanup 0
