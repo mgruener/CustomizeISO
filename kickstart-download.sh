@@ -1,6 +1,7 @@
 #!/bin/bash
 TMPDIR="$(mktemp -d)"
 DESTDIR="."
+DISABLEREPOS='--disablerepo="*"'
 MYNAME="$(basename ${0})"
 
 function cleanup {
@@ -11,7 +12,7 @@ function cleanup {
 }
 
 function usage {
-  echo "Usage: ${MYNAME} -k <kickstartfile> [-d <destdir>] [-v ksversion]"
+  echo "Usage: ${MYNAME} -k <kickstartfile> [-d <destdir>] [-v ksversion] [-s]"
   cleanup 1
 }
 
@@ -19,7 +20,7 @@ if [ $# -eq 0 ]; then
   usage
 fi
 
-while getopts ":hk:d:v:" opt; do
+while getopts ":hsk:d:v:" opt; do
   case ${opt} in
     k)
       KSFILE=${OPTARG}
@@ -29,6 +30,9 @@ while getopts ":hk:d:v:" opt; do
       ;;
     v)
       KSVERSION="-v ${OPTARG}"
+      ;;
+    s)
+      DISABLEREPOS=""
       ;;
     h)
       usage
@@ -88,16 +92,18 @@ if [ $? -ne 0 ]; then
 fi
 FLATTENEDKS="${TMPDIR}/kickstart/flattened.ks"
 STRIPPEDKS="${TMPDIR}/kickstart/stripped.ks"
+PACKAGELIST="${TMPDIR}/kickstart/packages"
 ksflatten -c ${KSFILE} -o "${FLATTENEDKS}"
 
-
 sed -n -e '/^%packages/,/^%end/p' -e '/^repo /p' "${FLATTENEDKS}" > "${STRIPPEDKS}"
-grep '^@' "${STRIPPEDKS}" > "${TMPDIR}/kickstart/groups"
+sed -n -e '/^%packages/,/^%end/p' ${STRIPPEDKS} | egrep -v '^%|^\s*$' > "${PACKAGELIST}"
+if [ -z "$(grep -o -- '--nobase' ${STRIPPEDKS})" ]; then
+  echo "@base" >> "${PACKAGELIST}"
+fi
+
 grep '^repo ' "${STRIPPEDKS}" | while read -r repo
 do
-  echo "${repo}"
   TEMP=$(getopt -u -l name:,baseurl:,mirrorlist:,cost:,excludepkgs:,includepkgs:,proxy:,ignoregroups:,noverifyssl,install -- ${repo})
-#  echo "${TEMP}"
   if [ $? -ne 0 ]; then
     echo "error while parsing repo: ${repo}"
     cleanup 1
@@ -110,39 +116,39 @@ do
         shift 2
         ;;
       --baseurl)
-        REPO_BASEURL=${2}
+        REPO_BASEURL="baseurl=${2}"
         shift 2
         ;;
       --mirrorlist)
-        REPO_MIRRORLIST=${2}
+        REPO_MIRRORLIST="mirrorlist=${2}"
         shift 2
         ;;
       --cost)
-        REPO_COST=${2}
+        REPO_COST="cost=${2}"
         shift 2
         ;;
       --excludepkgs)
-        REPO_EXCLUDEPKGS=${2}
+        REPO_EXCLUDEPKGS="exclude=${2}"
         shift 2
         ;;
       --includepkgs)
-        REPO_INCLUDEPKGS=${2}
+        REPO_INCLUDEPKGS="includepkgs=${2}"
         shift 2
         ;;
       --proxy)
-        REPO_PROXY=${2}
+        REPO_PROXY="proxy=${2}"
         shift 2
         ;;
       --ignoregroups)
-        REPO_IGNOREGROUPS=${2}
+        # unused
         shift 2
         ;;
       --noverifyssl)
-        REPO_NOVERIFYSSL=${2}
+        REPO_NOVERIFYSSL="sslverify=false"
         shift
         ;;
       --install)
-        REPO_INSTALL=${2}
+        # unused
         shift
         ;;
       --)
@@ -155,6 +161,19 @@ do
         ;;
     esac
   done
+  cat << EOF > "${TMPDIR}/yum.repos.d/${REPO_NAME}.repo"
+[${REPO_NAME}]
+name=${REPO_NAME}
+${REPO_BASEURL}
+${REPO_MIRRORLIST}
+${REPO_COST}
+${REPO_EXCLUDEPKGS}
+${REPO_INCLUDEPKGS}
+${REPO_PROXY}
+${REPO_NOVERIFYSSL}
+EOF
 done
+
+yumdownloader --installroot "${TMPDIR}" -c "${TMPDIR}/yum.conf" ${DISABLEREPOS} --resolve --destdir="${DESTDIR}" $(cat "${PACKAGELIST}")
 
 cleanup 0
