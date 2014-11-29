@@ -1,7 +1,9 @@
 #!/bin/bash
 TMPDIR="$(mktemp -d)"
 DESTDIR="."
-DISABLEREPOS='--disablerepo="*"'
+SYSTEMREPOS=''
+ARCHLIST=''
+OSRELEASE=$(python -c 'import platform; print(platform.linux_distribution()[1])')
 MYNAME="$(basename ${0})"
 
 function cleanup {
@@ -20,7 +22,7 @@ if [ $# -eq 0 ]; then
   usage
 fi
 
-while getopts ":hsk:d:v:" opt; do
+while getopts ":hsk:d:v:r:a:" opt; do
   case ${opt} in
     k)
       KSFILE=${OPTARG}
@@ -32,7 +34,13 @@ while getopts ":hsk:d:v:" opt; do
       KSVERSION="-v ${OPTARG}"
       ;;
     s)
-      DISABLEREPOS=""
+      SYSTEMREPOS=",/etc/yum.repos.d"
+      ;;
+    r)
+      OSRELEASE=${OPTARG}
+      ;;
+    a)
+      ARCHLIST="--archlist=${OPTARG}"
       ;;
     h)
       usage
@@ -79,7 +87,7 @@ cat << EOF > "${TMPDIR}/yum.conf"
 [main]
 cachedir=${TMPDIR}/yumcache/\$basearch/\$releasever
 logfile=${TMPDIR}/yumlog/yum.log
-reposdir=${TMPDIR}/yum.repos.d
+reposdir=${TMPDIR}/yum.repos.d${SYSTEMREPOS}
 keepcache=0
 debuglevel=2
 exactarch=1
@@ -195,9 +203,13 @@ done
 # we just created and simulate an empty system with --installroot
 # This prevents yum from trying to resolve dependencies using packages
 # installed on the host system
+# To resolve $releasever in repo configurations, yum needs to be able
+# determine the os version, which is not possible due to the empty
+# installroot so we have to provide it explicitely
 yumdownloader --installroot "${TMPDIR}" \
               -c "${TMPDIR}/yum.conf" \
-              ${DISABLEREPOS} \
+              --releasever ${OSRELEASE} \
+              ${ARCHLIST} \
               --resolve \
               --destdir="${DESTDIR}" \
               $(cat "${PACKAGELIST}")
