@@ -200,6 +200,9 @@ chmod -R +w "${DSTDIR}"
 # to any files copied to the new iso.
 cp -v "${KICKSTART}" "${DSTDIR}/ks.cfg"
 cp -v "${0}" "${DSTDIR}/"
+if [ -n "${KSDOWNLOAD}" ]; then
+  cp -v "${KSDOWNLOAD}" "${DSTDIR}/"
+fi
 cat << EOF > "${DSTDIR}/ksinclude.inc"
 %post --nochroot --interpreter /bin/bash --log /mnt/sysimage/root/install.log.post.ksinclude --erroronfail
 set -x
@@ -209,6 +212,9 @@ if [ -e /mnt/source/ksinclude ]; then
 fi
 
 cp -av /mnt/source/${MYNAME} /mnt/sysimage/root/
+if [ -n "${KSDOWNLOAD}" ]; then
+  cp -av /mnt/source/${KSDOWNLOAD} /mnt/sysimage/root/
+fi
 %end
 EOF
 
@@ -321,6 +327,7 @@ ${MKISOFS} -o "${DSTISO}" \
            -m "${SRCDIR}/customrpms" \
            -m "${SRCDIR}/ksinclude.inc" \
            -m "${SRCDIR}/${MYNAME}" \
+           -m "${SRCDIR}/${KSDOWNLOAD:-kickstart-download.sh}" \
            -m "${SRCDIR}/ks.cfg" \
            -m ".svn" \
            -m ".git" \
