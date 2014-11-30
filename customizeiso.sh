@@ -187,7 +187,7 @@ fi
 
 # copy the bootloader directory from the source media because we want to
 # modify the bootloader configration
-cp -av "${SRCDIR}/isolinux" "${DSTDIR}/."
+cp -av "${SRCDIR}/isolinux" "${SRCDIR}/EFI" "${DSTDIR}/."
 if [ $? -ne 0 ];then
   echo "Failed to copy source iso contents from ${SRCDIR} to ${DSTDIR}" >&2
   if [ ${SRCISFILE} -eq 1 ]; then
@@ -309,30 +309,30 @@ else
   echo "# END CUSTOM" >> "${DSTDIR}/isolinux/isolinux.cfg"
 fi
 
-if [ -e "${DSTDIR}/isolinux/grub.conf" ]; then
-  sed -i -e '/^# BEGIN CUSTOM$/,/^# END CUSTOM$/d' "${DSTDIR}/isolinux/grub.conf"
+if [ -e "${DSTDIR}/EFI/BOOT/BOOTX64.conf" ]; then
+  sed -i -e '/^# BEGIN CUSTOM$/,/^# END CUSTOM$/d' "${DSTDIR}/EFI/BOOT/BOOTX64.conf"
   if [ -z "${GRUB}" ]; then
-  cat << EOF >> "${DSTDIR}/isolinux/grub.conf"
+  cat << EOF >> "${DSTDIR}/EFI/BOOT/BOOTX64.conf"
 # BEGIN CUSTOM
 title Custom kickstart installation
-        kernel @KERNELPATH@ ks=cd:ks.cfg ${BOOTOPTS}
-        initrd @INITRDPATH@
+        kernel /images/pxeboot/vmlinuz ks=cd:ks.cfg ${BOOTOPTS}
+        initrd /images/pxeboot/initrd.img
 # END CUSTOM
 EOF
   else
     # A specific grub.conf snippet has been provided.
     # If bootoptions where provided on the commandline
     # add them to each append line of the snippet.
-    cp "${ISOLINUX}" "${BUILDDIR}/grub.conf"
+    cp "${ISOLINUX}" "${BUILDDIR}/BOOTX64.conf"
     if [ -n "${BOOTOPTS}" ]; then
-      sed -i -e "s/^\(\s*kernel .*\)/\1 ${BOOTOPTS}/g" "${BUILDDIR}/grub.conf"
+      sed -i -e "s/^\(\s*kernel .*\)/\1 ${BOOTOPTS}/g" "${BUILDDIR}/BOOTX64.conf"
     fi
     # Add the grub.conf snippet to the media grub.conf
     # and enclose it in BEGIN and END comments so we can remove
     # these additions when re-customizing this iso
-    echo "# BEGIN CUSTOM" >> "${DSTDIR}/isolinux/grub.conf"
-    cat "${BUILDDIR}/grub.conf" >> "${DSTDIR}/isolinux/grub.conf"
-    echo "# END CUSTOM" >> "${DSTDIR}/isolinux/grub.conf"
+    echo "# BEGIN CUSTOM" >> "${DSTDIR}/EFI/BOOT/BOOTX64.conf"
+    cat "${BUILDDIR}/BOOTX64.conf" >> "${DSTDIR}/EFI/BOOT/BOOTX64.conf"
+    echo "# END CUSTOM" >> "${DSTDIR}/EFI/BOOT/BOOTX64.conf"
   fi
 fi
 
@@ -370,6 +370,7 @@ ${MKISOFS} -o "${DSTISO}" \
            -graft-points \
            -J -l -r -T -v -V "Custom Kickstart ISO" \
            -m "${SRCDIR}/isolinux" \
+           -m "${SRCDIR}/EFI" \
            -m "${SRCDIR}/repodata" \
            -m "${SRCDIR}/ksinclude" \
            -m "${SRCDIR}/customrpms" \
