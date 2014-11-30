@@ -246,6 +246,12 @@ if [ ${GATHERRPMS} -ne 0 ]; then
   sed -i -e '/^repo /d' "${DSTDIR}/ks.cfg"
 fi
 
+# anaconda treats all relative includes to be relative to the cwd
+# and not to the media mountpoint
+# convert all relative %include statements to absolute ones
+# by prefixing the media mountpoint (/mnt/stage2)
+sed -i -e '/%include [^/]/s!^%include \(.*\)$!%include /mnt/stage2/\1!g' "${DSTDIR}/ks.cfg"
+
 # Recreate repository information.
 # It is safe to assume that ther is only one file
 # matching *-*.xml because you can specify -g only once
