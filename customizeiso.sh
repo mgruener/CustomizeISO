@@ -24,6 +24,8 @@ if [ $# -eq 0 ]; then
   usage
 fi
 
+CLI="${MYNAME} ${@}"
+
 while getopts ":hgds:o:k:i:l:v:r:a:" opt; do
   case ${opt} in
     s)
@@ -216,6 +218,11 @@ cp -av /mnt/source/${MYNAME} /mnt/sysimage/root/bin/
 if [ -n "${KSDOWNLOAD}" ]; then
   cp -av /mnt/source/${KSDOWNLOAD} /mnt/sysimage/root/bin/
 fi
+cat << MYEOF > /mnt/sysimage/root/bin/recreate-iso.sh
+#!/bin/bash
+${CLI}
+MYEOF
+chmod +x /mnt/sysimage/root/bin/recreate-iso.sh
 %end
 EOF
 
