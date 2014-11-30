@@ -5,6 +5,7 @@ KICKSTART=""
 INCLUDEDIR=""
 DSTISO="custom.iso"
 ISOLINUX=""
+GRUB=""
 SRCISFILE=1
 GATHERRPMS=0
 MYNAME=$(basename "${0}")
@@ -16,7 +17,7 @@ IMPLANTISOMD5="$(which --skip-alias --skip-functions implantisomd5 2>/dev/null)"
 KSDOWNLOAD="$(which --skip-alias --skip-functions kickstart-download.sh 2>/dev/null)"
 
 function usage {
-  echo "Usage: ${MYNAME} -s <sourceiso> -k <kickstartfile> [-g] [-d] [-v <ksversion>] [-r <osrelease>] [-a <archlist>] [-o <destiso>] [-i <includedir>] [-l <isolinuxcfg> ] [-- <bootopts>]" >&2
+  echo "Usage: ${MYNAME} -s <sourceiso> -k <kickstartfile> [-g] [-d] [-v <ksversion>] [-r <osrelease>] [-a <archlist>] [-o <destiso>] [-i <includedir>] [-l <isolinuxcfg>] [-b <grubconf>] [-- <bootopts>]" >&2
   exit 1
 }
 
@@ -26,7 +27,7 @@ fi
 
 CLI="${MYNAME} ${@}"
 
-while getopts ":hgds:o:k:i:l:v:r:a:" opt; do
+while getopts ":hgds:o:k:i:l:v:r:a:b:" opt; do
   case ${opt} in
     s)
       SRCISO=${OPTARG}
@@ -42,6 +43,9 @@ while getopts ":hgds:o:k:i:l:v:r:a:" opt; do
       ;;
     l)
       ISOLINUX=${OPTARG}
+      ;;
+    b)
+      GRUB=${OPTARG}
       ;;
     g)
       GATHERRPMS=1
@@ -268,8 +272,8 @@ rm -f "${DSTDIR}/customrpms"
 
 # Clean up in case we are working on an already
 # customized source media.
-# The BEGIN and END comments are added during isolinux.cfg customization,
-# see below
+# The BEGIN and END comments are added during isolinux.cfg / grub.conf
+# customization, see below
 sed -i -e '/^# BEGIN CUSTOM$/,/^# END CUSTOM$/d' "${DSTDIR}/isolinux/isolinux.cfg"
 if [ -z "${ISOLINUX}" ]; then
 # Create a new default boot menu entry in case no
@@ -297,6 +301,33 @@ else
   echo "# BEGIN CUSTOM" >> "${DSTDIR}/isolinux/isolinux.cfg"
   cat "${BUILDDIR}/isolinux.cfg" >> "${DSTDIR}/isolinux/isolinux.cfg"
   echo "# END CUSTOM" >> "${DSTDIR}/isolinux/isolinux.cfg"
+fi
+
+if [ -e "${DSTDIR}/isolinux/grub.conf" ]; then
+  sed -i -e '/^# BEGIN CUSTOM$/,/^# END CUSTOM$/d' "${DSTDIR}/isolinux/grub.conf"
+  if [ -z "${GRUB}" ]; then
+  cat << EOF >> "${DSTDIR}/isolinux/grub.conf"
+# BEGIN CUSTOM
+title Custom kickstart installation
+        kernel @KERNELPATH@ ks=cd:ks.cfg ${BOOTOPTS}
+        initrd @INITRDPATH@
+# END CUSTOM
+EOF
+  else
+    # A specific grub.conf snippet has been provided.
+    # If bootoptions where provided on the commandline
+    # add them to each append line of the snippet.
+    cp "${ISOLINUX}" "${BUILDDIR}/grub.conf"
+    if [ -n "${BOOTOPTS}" ]; then
+      sed -i -e "s/^\(\s*kernel .*\)/\1 ${BOOTOPTS}/g" "${BUILDDIR}/grub.conf"
+    fi
+    # Add the grub.conf snippet to the media grub.conf
+    # and enclose it in BEGIN and END comments so we can remove
+    # these additions when re-customizing this iso
+    echo "# BEGIN CUSTOM" >> "${DSTDIR}/isolinux/grub.conf"
+    cat "${BUILDDIR}/grub.conf" >> "${DSTDIR}/isolinux/grub.conf"
+    echo "# END CUSTOM" >> "${DSTDIR}/isolinux/grub.conf"
+  fi
 fi
 
 # If the destination iso already exists remove it.
