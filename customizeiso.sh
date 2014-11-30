@@ -6,14 +6,17 @@ INCLUDEDIR=""
 DSTISO="custom.iso"
 ISOLINUX=""
 SRCISFILE=1
+GATHERRPMS=0
 MYNAME=$(basename "${0}")
+KSDOWNLOADOPTIONS=''
 
 CREATEREPO="$(which --skip-alias --skip-functions createrepo 2>/dev/null)"
 MKISOFS="$(which --skip-alias --skip-functions mkisofs 2>/dev/null)"
 IMPLANTISOMD5="$(which --skip-alias --skip-functions implantisomd5 2>/dev/null)"
+KSDOWNLOAD="$(which --skip-alias --skip-functions kickstart-download.sh 2>/dev/null)"
 
 function usage {
-  echo "Usage: ${MYNAME} -s <sourceiso> -k <kickstartfile> [-d <destiso>] [-i <includedir>] [-l <isolinuxcfg> ] [-- <bootopts>]" >&2
+  echo "Usage: ${MYNAME} -s <sourceiso> -k <kickstartfile> [-g] [-d] [-v <ksversion>] [-r <osrelease>] [-a <archlist>] [-d <destiso>] [-i <includedir>] [-l <isolinuxcfg> ] [-- <bootopts>]" >&2
   exit 1
 }
 
@@ -21,7 +24,7 @@ if [ $# -eq 0 ]; then
   usage
 fi
 
-while getopts ":hs:o:k:i:l:" opt; do
+while getopts ":hgds:o:k:i:l:v:r:a:" opt; do
   case ${opt} in
     s)
       SRCISO=${OPTARG}
@@ -37,6 +40,21 @@ while getopts ":hs:o:k:i:l:" opt; do
       ;;
     l)
       ISOLINUX=${OPTARG}
+      ;;
+    g)
+      GATHERRPMS=1
+      ;;
+    d)
+      KSDOWNLOADOPTIONS="${KSDOWNLOADOPTIONS} -s"
+      ;;
+    v)
+      KSDOWNLOADOPTIONS="${KSDOWNLOADOPTIONS} -v ${OPTARG}"
+      ;;
+    r)
+      KSDOWNLOADOPTIONS="${KSDOWNLOADOPTIONS} -r ${OPTARG}"
+      ;;
+    a)
+      KSDOWNLOADOPTIONS="${KSDOWNLOADOPTIONS} -a ${OPTARG}"
       ;;
     h)
       usage
@@ -100,9 +118,17 @@ if [ -z "${IMPLANTISOMD5}" ]; then
   exit 1
 fi
 
+if [ ${GATHERRPMS} -ne 0 ]; then
+  if [ -z "${KSDOWNLOAD}" ]; then
+    echo "Can not find kickstart-downloader.sh script"
+    exit 1
+  fi
+fi
+
 BUILDDIR=$(mktemp -d)
 DSTDIR="${BUILDDIR}/dst"
 SRCDIR="${BUILDDIR}/src"
+RPMDIR="${BUILDDIR}/rpm"
 
 # prepare build directory
 
@@ -186,6 +212,19 @@ cp -av /mnt/source/${MYNAME} /mnt/sysimage/root/
 %end
 EOF
 
+# use kickstart-downloader.sh to download all necessary rpms
+# using the repositories specified in the kickstart file
+# to create a self contained installation medium (so no
+# network access is necessary during the installation)
+if [ ${GATHERRPMS} -ne 0 ]; then
+  mkdir "${RPMDIR}"
+  ${KSDOWNLOADER} -k "${DSTDIR}/ks.cfg" -d "${RPMDIR}" ${KSDOWNLOADOPTIONS}
+  # delete all repo statements in the kickstart file
+  # because we downloaded all necessary rpms, there
+  # is no need to keep them
+  sed -i -e '/^repo /d' "${DSTDIR}/ks.cfg"
+fi
+
 # Recreate repository information.
 # It is safe to assume that ther is only one file
 # matching *-*.xml because you can specify -g only once
@@ -196,6 +235,7 @@ cp ${SRCDIR}/repodata/*-*.xml "${BUILDDIR}/comps.xml"
 # the source media to our destination directory.
 ln -s "${SRCDIR}/Packages" "${DSTDIR}/Packages"
 ln -s "${INCLUDEDIR}" "${DSTDIR}/ksinclude"
+ln -s "${RPMDIR}" "${DSTDIR}/customrpms"
 ${CREATEREPO} -u "media://$(head -n1 ${SRCDIR}/.discinfo)" -g "${BUILDDIR}/comps.xml" "${DSTDIR}/."
 if [ $? -ne 0 ];then
   echo "Failed to create repository data" >&2
@@ -262,6 +302,9 @@ rm -f "${DSTDIR}/isolinux/boot.cat"
 ISOCONTENT="${SRCDIR} ${DSTDIR}"
 if [ -n "${INCLUDEDIR}" ]; then
   ISOCONTENT="${ISOCONTENT} ksinclude=${INCLUDEDIR}"
+fi
+if [ ${GATHERRPMS} -ne 0 ]; then
+  ISOCONTENT="${ISOCONTENT} customrpms=${RPMDIR}"
 fi
 ${MKISOFS} -o "${DSTISO}" \
            -b isolinux/isolinux.bin \
