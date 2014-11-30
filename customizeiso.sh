@@ -318,6 +318,7 @@ ${MKISOFS} -o "${DSTISO}" \
            -m "${SRCDIR}/isolinux" \
            -m "${SRCDIR}/repodata" \
            -m "${SRCDIR}/ksinclude" \
+           -m "${SRCDIR}/customrpms" \
            -m "${SRCDIR}/ksinclude.inc" \
            -m "${SRCDIR}/${MYNAME}" \
            -m "${SRCDIR}/ks.cfg" \
