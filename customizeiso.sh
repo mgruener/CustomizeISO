@@ -315,7 +315,7 @@ if [ -e "${DSTDIR}/EFI/BOOT/BOOTX64.conf" ]; then
   cat << EOF >> "${DSTDIR}/EFI/BOOT/BOOTX64.conf"
 # BEGIN CUSTOM
 title Custom kickstart installation
-        kernel /images/pxeboot/vmlinuz ks=cd:ks.cfg ${BOOTOPTS}
+        kernel /images/pxeboot/vmlinuz ks=cdrom:ks.cfg ${BOOTOPTS}
         initrd /images/pxeboot/initrd.img
 # END CUSTOM
 EOF
