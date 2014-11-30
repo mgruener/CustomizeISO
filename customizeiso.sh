@@ -211,9 +211,10 @@ if [ -e /mnt/source/ksinclude ]; then
   rm -f /mnt/sysimage/root/ksinclude/TRANS.TBL
 fi
 
-cp -av /mnt/source/${MYNAME} /mnt/sysimage/root/
+mkdir -p /mnt/sysimage/root/bin
+cp -av /mnt/source/${MYNAME} /mnt/sysimage/root/bin/
 if [ -n "${KSDOWNLOAD}" ]; then
-  cp -av /mnt/source/${KSDOWNLOAD} /mnt/sysimage/root/
+  cp -av /mnt/source/${KSDOWNLOAD} /mnt/sysimage/root/bin/
 fi
 %end
 EOF
