@@ -218,7 +218,7 @@ EOF
 # network access is necessary during the installation)
 if [ ${GATHERRPMS} -ne 0 ]; then
   mkdir "${RPMDIR}"
-  ${KSDOWNLOADER} -k "${DSTDIR}/ks.cfg" -d "${RPMDIR}" ${KSDOWNLOADOPTIONS}
+  ${KSDOWNLOAD} -k "${DSTDIR}/ks.cfg" -d "${RPMDIR}" ${KSDOWNLOADOPTIONS}
   # delete all repo statements in the kickstart file
   # because we downloaded all necessary rpms, there
   # is no need to keep them
@@ -247,6 +247,7 @@ if [ $? -ne 0 ];then
 fi
 rm -f "${DSTDIR}/Packages"
 rm -f "${DSTDIR}/ksinclude"
+rm -f "${DSTDIR}/customrpms"
 
 # Clean up in case we are working on an already
 # customized source media.
