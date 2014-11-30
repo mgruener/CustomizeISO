@@ -16,7 +16,7 @@ IMPLANTISOMD5="$(which --skip-alias --skip-functions implantisomd5 2>/dev/null)"
 KSDOWNLOAD="$(which --skip-alias --skip-functions kickstart-download.sh 2>/dev/null)"
 
 function usage {
-  echo "Usage: ${MYNAME} -s <sourceiso> -k <kickstartfile> [-g] [-d] [-v <ksversion>] [-r <osrelease>] [-a <archlist>] [-d <destiso>] [-i <includedir>] [-l <isolinuxcfg> ] [-- <bootopts>]" >&2
+  echo "Usage: ${MYNAME} -s <sourceiso> -k <kickstartfile> [-g] [-d] [-v <ksversion>] [-r <osrelease>] [-a <archlist>] [-o <destiso>] [-i <includedir>] [-l <isolinuxcfg> ] [-- <bootopts>]" >&2
   exit 1
 }
 

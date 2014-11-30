@@ -14,7 +14,7 @@ function cleanup {
 }
 
 function usage {
-  echo "Usage: ${MYNAME} -k <kickstartfile> [-d <destdir>] [-v ksversion] [-s]"
+  echo "Usage: ${MYNAME} -k <kickstartfile> [-d <destdir>] [-v ksversion] [-r <osrelease>] [-a <archlist>] [-s]" >&2
   cleanup 1
 }
 
