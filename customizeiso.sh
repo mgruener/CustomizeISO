@@ -220,7 +220,7 @@ fi
 mkdir -p /mnt/sysimage/root/bin
 cp -av /mnt/source/${MYNAME} /mnt/sysimage/root/bin/
 if [ -n "${KSDOWNLOAD}" ]; then
-  cp -av /mnt/source/${KSDOWNLOAD} /mnt/sysimage/root/bin/
+  cp -av /mnt/source/$(basename ${KSDOWNLOAD}) /mnt/sysimage/root/bin/
 fi
 cat << MYEOF > /mnt/sysimage/root/bin/recreate-iso.sh
 #!/bin/bash
