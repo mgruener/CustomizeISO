@@ -376,7 +376,7 @@ ${MKISOFS} -o "${DSTISO}" \
            -m "${SRCDIR}/customrpms" \
            -m "${SRCDIR}/ksinclude.inc" \
            -m "${SRCDIR}/${MYNAME}" \
-           -m "${SRCDIR}/${KSDOWNLOAD:-kickstart-download.sh}" \
+           -m "${SRCDIR}/$(basename ${KSDOWNLOAD:-kickstart-download.sh})" \
            -m "${SRCDIR}/ks.cfg" \
            -m ".svn" \
            -m ".git" \
