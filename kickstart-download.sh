@@ -114,7 +114,7 @@ ksflatten -c ${KSFILE} -o "${FLATTENEDKS}"
 # and extract all package / group names (we will use the package list
 # as input for yumdownloader later)
 sed -n -e '/^%packages/,/^%end/p' -e '/^repo /p' "${FLATTENEDKS}" > "${STRIPPEDKS}"
-sed -n -e '/^%packages/,/^%end/p' ${STRIPPEDKS} | egrep -v '^%|^\s*$' > "${PACKAGELIST}"
+sed -n -e '/^%packages/,/^%end/p' ${STRIPPEDKS} | egrep -v '^%|^\s*$|^-' > "${PACKAGELIST}"
 # if the option --nobase is not used, explicitely add the
 # @base group the the packagelist
 if [ -z "$(grep -o -- '--nobase' ${STRIPPEDKS})" ]; then
