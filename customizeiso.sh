@@ -272,6 +272,10 @@ if [ $? -ne 0 ];then
   rm -rf "${BUILDDIR}"
   exit 1
 fi
+if [ -f "${SRCDIR}/repodata/productid" ]; then
+  cp "${SRCDIR}/repodata/productid" "${DSTDIR}/repodata/"
+  ${MODIFYREPO} "${DSTDIR}/repodata/productid" "${DSTDIR}/repodata/"
+fi
 rm -f "${DSTDIR}/Packages"
 rm -f "${DSTDIR}/ksinclude"
 rm -f "${DSTDIR}/customrpms"
