@@ -12,6 +12,7 @@ MYNAME=$(basename "${0}")
 KSDOWNLOADOPTIONS=''
 
 CREATEREPO="$(which --skip-alias --skip-functions createrepo 2>/dev/null)"
+MODIFYREPO="$(which --skip-alias --skip-functions modifyrepo 2>/dev/null)"
 MKISOFS="$(which --skip-alias --skip-functions mkisofs 2>/dev/null)"
 IMPLANTISOMD5="$(which --skip-alias --skip-functions implantisomd5 2>/dev/null)"
 KSDOWNLOAD="$(which --skip-alias --skip-functions kickstart-download.sh 2>/dev/null)"
